@@ -388,17 +388,7 @@ button.mfp-close:hover {
 .popup-box img {
     width: 100%;
 }
-.popup-box ul{
-    list-style: none;
-    text-align: center;
-    padding: 0;
-    margin: 0;
-    margin-top: 20px;
-    word-spacing: 10px;
-    overflow: hidden;
-
-}
-.popup-box li{
+.popup-box a{
     margin: 5px auto 10px auto;
     text-align: center;
     width: 80px;
@@ -408,6 +398,15 @@ button.mfp-close:hover {
     text-align: center;
     font-size:30px;
     margin: 5px;
+}
+.box{
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    height: 100px;
+    margin-top: 20px;
+    word-spacing: 10px;
+    overflow: hidden;
 }
 .resume-background {
     padding: 100px 0 0;
@@ -744,7 +743,7 @@ textarea {
 .sosialbar {
     font-size: 20px;
     margin :0 30px;
-    word-spacing: 20px;
+    word-spacing: 10px;
     color:white;
 }
 
