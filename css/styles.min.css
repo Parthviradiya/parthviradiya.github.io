@@ -742,9 +742,11 @@ textarea {
 }
 .sosialbar {
     font-size: 20px;
-    margin :0 30px;
     word-spacing: 10px;
     color:white;
+    margin-right: auto;
+    margin-left: auto;
+    padding-top: 10px;
 }
 
 
