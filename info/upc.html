@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unity Pixel → Units Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg:        #f5f4f0;
+    --surface:   #ffffff;
+    --surface2:  #f0ede8;
+    --border:    #d8d3cb;
+    --border2:   #c4bdb3;
+    --text:      #1a1916;
+    --text2:     #4a4642;
+    --muted:     #8a8480;
+    --accent:    #1a6ef5;
+    --accent-bg: #eaf1ff;
+    --green:     #1a7a3c;
+    --green-bg:  #e8f7ed;
+    --orange:    #c45200;
+    --orange-bg: #fff0e6;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .dock {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-family: var(--sans);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  header .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent-bg);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .globals {
+    background: var(--surface);
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .globals-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+
+  .field input {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+
+  .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,110,245,0.12);
+    background: #fff;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .card.wide { grid-column: span 2; }
+  @media (max-width: 620px) { .card.wide { grid-column: span 1; } }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    background: var(--surface2);
+    border-bottom: 1.5px solid var(--border);
+  }
+
+  .card-num { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); min-width: 22px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .card-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .formula-box {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 7px 12px;
+    border-radius: 0 6px 6px 0;
+    line-height: 1.7;
+  }
+  .formula-box .sym { color: var(--accent); font-weight: 600; }
+
+  .inputs-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .inputs-row .field { flex: 1; min-width: 80px; }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--green-bg);
+    border: 1.5px solid #b8e8c8;
+    border-radius: 7px;
+    padding: 9px 14px;
+  }
+  .result-row.orange { background: var(--orange-bg); border-color: #f5c9a0; }
+  .result-row.blue   { background: var(--accent-bg); border-color: #b8d4fc; }
+
+  .result-label { font-size: 11px; font-weight: 600; color: var(--text2); }
+
+  .result-val { display: flex; align-items: baseline; gap: 3px; }
+
+  .result-value { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--green); }
+  .result-row.orange .result-value { color: var(--orange); }
+  .result-row.blue   .result-value { color: var(--accent); }
+
+  .result-unit { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .multi-result { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .result-row.small .result-value { font-size: 16px; }
+
+  .ppu-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+  .ppu-table th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 10px;
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .ppu-table td { padding: 7px 14px; border-bottom: 1px solid var(--surface2); color: var(--text2); }
+  .ppu-table tr:last-child td { border-bottom: none; }
+  .ppu-table tr:hover td { background: var(--surface2); }
+  .ppu-table td:last-child { color: var(--green); font-weight: 600; }
+
+  .cheatsheet {
+    margin-top: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    grid-column: 1/-1;
+  }
+  .cheatsheet .section-label { color: var(--orange); margin-bottom: 14px; }
+
+  .formulas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+
+  .formula-pill {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .formula-pill .hi { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="dock">
+
+  <header>
+    <div>
+      <h1>Unity Pixel Calculator</h1>
+      <div class="subtitle">Photoshop → World Units · Full Dock</div>
+    </div>
+    <span class="pill">PPU · Camera · Sprite · UI</span>
+  </header>
+
+  <div class="globals">
+    <div class="section-label">⚙ Global Settings — shared across all calculators</div>
+    <div class="globals-row">
+      <div class="field"><label>Pixels Per Unit (PPU)</label><input type="number" id="g_ppu" value="100" step="1" min="1"></div>
+      <div class="field"><label>Screen Width (px)</label><input type="number" id="g_sw" value="1080" step="1" min="1"></div>
+      <div class="field"><label>Screen Height (px)</label><input type="number" id="g_sh" value="2400" step="1" min="1"></div>
+      <div class="field"><label>Orthographic Size</label><input type="number" id="g_ortho" value="12" step="0.1" min="0.1"></div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">01</span><span class="card-title">Pixels → World Units</span><span class="card-dot" style="background:#1a6ef5"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">Units</span> = Pixels ÷ PPU</div>
+        <div class="inputs-row"><div class="field"><label>Pixel value</label><input type="number" id="c1_px" value="300" step="1"></div></div>
+        <div class="result-row blue"><span class="result-label">World Units</span><div class="result-val"><span class="result-value" id="c1_out">3.00</span><span class="result-unit">u</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">02</span><span class="card-title">Camera Orthographic Size</span><span class="card-dot" style="background:#c45200"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">OrthoSize</span> = (W÷PPU) ÷ (2×aspect)</div>
+        <div class="result-row small orange"><span class="result-label">Aspect Ratio</span><div class="result-val"><span class="result-value" id="c2_aspect">0.450</span></div></div>
+        <div class="result-row small orange"><span class="result-label">Orthographic Size</span><div class="result-val"><span class="result-value" id="c2_ortho">12.00</span><span class="result-unit">u</span></div></div>
+        <div class="result-row small orange"><span class="result-label">Visible Height</span><div class="result-val"><span class="result-value" id="c2_height">24.00</span><span class="result-unit">u</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">03</span><span class="card-title">World Width & Height</span><span class="card-dot" style="background:#1a7a3c"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">H</span> = 2×OrthoSize &nbsp;·&nbsp; <span class="sym">W</span> = H×aspect</div>
+        <div class="multi-result">
+          <div class="result-row small"><span class="result-label">Width</span><div class="result-val"><span class="result-value" id="c3_w">10.80</span><span class="result-unit">u</span></div></div>
+          <div class="result-row small"><span class="result-label">Height</span><div class="result-val"><span class="result-value" id="c3_h">24.00</span><span class="result-unit">u</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">04</span><span class="card-title">Screen Pixels → World Units</span><span class="card-dot" style="background:#1a6ef5"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">W</span> = (CamW ÷ ScreenW) × PixelValue</div>
+        <div class="inputs-row"><div class="field"><label>Pixel value</label><input type="number" id="c4_px" value="200" step="1"></div></div>
+        <div class="result-row blue"><span class="result-label">World Units</span><div class="result-val"><span class="result-value" id="c4_out">2.00</span><span class="result-unit">u</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">05</span><span class="card-title">Sprite Scale → Fit Width</span><span class="card-dot" style="background:#c45200"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">Scale</span> = CamW ÷ (SpritePx ÷ PPU)</div>
+        <div class="inputs-row"><div class="field"><label>Sprite width (px)</label><input type="number" id="c5_px" value="1024" step="1"></div></div>
+        <div class="result-row small orange"><span class="result-label">Sprite World W</span><div class="result-val"><span class="result-value" id="c5_sw">10.24</span><span class="result-unit">u</span></div></div>
+        <div class="result-row orange"><span class="result-label">Scale to Fit</span><div class="result-val"><span class="result-value" id="c5_scale">1.055</span><span class="result-unit">×</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">06</span><span class="card-title">Sprite Scale → Cover Screen</span><span class="card-dot" style="background:#1a7a3c"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">Scale</span> = max(CamW/SpW, CamH/SpH)</div>
+        <div class="inputs-row">
+          <div class="field"><label>Sprite W (px)</label><input type="number" id="c6_pw" value="1080" step="1"></div>
+          <div class="field"><label>Sprite H (px)</label><input type="number" id="c6_ph" value="2400" step="1"></div>
+        </div>
+        <div class="multi-result">
+          <div class="result-row small"><span class="result-label">ScaleX</span><div class="result-val"><span class="result-value" id="c6_sx">1.00</span><span class="result-unit">×</span></div></div>
+          <div class="result-row small"><span class="result-label">ScaleY</span><div class="result-val"><span class="result-value" id="c6_sy">1.00</span><span class="result-unit">×</span></div></div>
+        </div>
+        <div class="result-row"><span class="result-label">Cover Scale</span><div class="result-val"><span class="result-value" id="c6_cover">1.00</span><span class="result-unit">×</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">07</span><span class="card-title">Safe Area → World Units</span><span class="card-dot" style="background:#1a6ef5"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">Safe</span> = (SafePx ÷ ScreenH) × CamH</div>
+        <div class="inputs-row"><div class="field"><label>Safe area height (px)</label><input type="number" id="c7_safe" value="2200" step="1"></div></div>
+        <div class="result-row blue"><span class="result-label">Safe Height</span><div class="result-val"><span class="result-value" id="c7_out">22.00</span><span class="result-unit">u</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-num">08</span><span class="card-title">UI Layout Width Clamp</span><span class="card-dot" style="background:#c45200"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">UIScale</span> = min(1, CamW ÷ DesignW)</div>
+        <div class="inputs-row"><div class="field"><label>Design width (u)</label><input type="number" id="c8_dw" value="10.8" step="0.1"></div></div>
+        <div class="result-row orange"><span class="result-label">UI Scale</span><div class="result-val"><span class="result-value" id="c8_out">1.000</span><span class="result-unit">×</span></div></div>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <div class="card-header"><span class="card-num">09</span><span class="card-title">Photoshop Coordinates → Unity World Position</span><span class="card-dot" style="background:#1a7a3c"></span></div>
+      <div class="card-body">
+        <div class="formula-box"><span class="sym">X</span> = (PixelX ÷ PPU) − CamW/2 &nbsp;&nbsp;&nbsp; <span class="sym">Y</span> = CamH/2 − (PixelY ÷ PPU)</div>
+        <div class="inputs-row">
+          <div class="field"><label>Pixel X (from left)</label><input type="number" id="c9_px" value="540" step="1"></div>
+          <div class="field"><label>Pixel Y (from top)</label><input type="number" id="c9_py" value="1200" step="1"></div>
+        </div>
+        <div class="multi-result">
+          <div class="result-row small"><span class="result-label">Unity X</span><div class="result-val"><span class="result-value" id="c9_ox">0.00</span><span class="result-unit">u</span></div></div>
+          <div class="result-row small"><span class="result-label">Unity Y</span><div class="result-val"><span class="result-value" id="c9_oy">0.00</span><span class="result-unit">u</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <div class="card-header"><span class="card-num">REF</span><span class="card-title">Common Sizes at Current PPU</span><span class="card-dot" style="background:#8a8480"></span></div>
+      <div class="card-body" style="padding:0">
+        <table class="ppu-table">
+          <thead><tr><th>Photoshop (px)</th><th>World Units (u)</th></tr></thead>
+          <tbody id="ppu_body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cheatsheet">
+      <div class="section-label">▸ Cheat Sheet — World Space</div>
+      <div class="formulas-grid">
+        <div class="formula-pill"><span class="hi">Units</span> = Pixels / PPU</div>
+        <div class="formula-pill"><span class="hi">CamHeight</span> = CamWidth / Aspect</div>
+        <div class="formula-pill"><span class="hi">WorldWidth</span> = 2 × OrthoSize × Aspect</div>
+        <div class="formula-pill"><span class="hi">WorldHeight</span> = 2 × OrthoSize</div>
+        <div class="formula-pill"><span class="hi">ScaleToFit</span> = CamWidth / SpriteWidthUnits</div>
+        <div class="formula-pill"><span class="hi">ScaleToCover</span> = max(wScale, hScale)</div>
+        <div class="formula-pill"><span class="hi">OrthoSize</span> = DesignWidthUnits / (2 × aspect)</div>
+        <div class="formula-pill"><span class="hi">UIScale</span> = min(1, CamW / DesignW)</div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- ═══════════════════ CANVAS SCALER SECTION ═══════════════════ -->
+  <div style="margin-top:32px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:1.5px solid var(--border2)">
+      <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.3px">Canvas Scaler</h2>
+      <span class="pill" style="background:var(--green-bg);color:var(--green)">UI SYSTEM</span>
+      <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">Scale With Screen Size</span>
+    </div>
+
+    <!-- Canvas globals row -->
+    <div class="globals" style="border-color:var(--green);border-top:3px solid var(--green)">
+      <div class="section-label">Canvas Scaler Settings</div>
+      <div class="globals-row">
+        <div class="field"><label>Reference Width (px)</label><input type="number" id="cs_rw" value="1080" step="1" min="1"></div>
+        <div class="field"><label>Reference Height (px)</label><input type="number" id="cs_rh" value="2400" step="1" min="1"></div>
+        <div class="field">
+          <label>Match (0 = width · 1 = height)</label>
+          <input type="number" id="cs_match" value="0.5" step="0.05" min="0" max="1">
+        </div>
+        <div class="field">
+          <label>Match Slider</label>
+          <input type="range" id="cs_match_slider" min="0" max="1" step="0.05" value="0.5" style="margin-top:8px;accent-color:var(--green)">
+        </div>
+        <div class="field"><label>Device Screen Width (px)</label><input type="number" id="cs_dw" value="1440" step="1" min="1"></div>
+        <div class="field"><label>Device Screen Height (px)</label><input type="number" id="cs_dh" value="3200" step="1" min="1"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- CS-A: Scale Calculator -->
+      <div class="card wide">
+        <div class="card-header"><span class="card-num">CS·1</span><span class="card-title">Canvas Scale Calculator</span><span class="card-dot" style="background:var(--green)"></span></div>
+        <div class="card-body">
+          <div class="formula-box">
+            <span class="sym">widthRatio</span> = ScreenW / RefW &nbsp;&nbsp; <span class="sym">heightRatio</span> = ScreenH / RefH<br>
+            <span class="sym">scale</span> = widthRatio × (1 − match) + heightRatio × match
+          </div>
+          <div class="multi-result">
+            <div class="result-row small"><span class="result-label">Width Ratio</span><div class="result-val"><span class="result-value" id="cs_wr">1.333</span><span class="result-unit">×</span></div></div>
+            <div class="result-row small"><span class="result-label">Height Ratio</span><div class="result-val"><span class="result-value" id="cs_hr">1.333</span><span class="result-unit">×</span></div></div>
+          </div>
+          <div class="result-row" style="border-color:var(--green);border-left:3px solid var(--green)">
+            <span class="result-label">Canvas Scale</span>
+            <div class="result-val"><span class="result-value" id="cs_scale" style="color:var(--green)">1.333</span><span class="result-unit">×</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px" id="cs_note">Balanced blend (match = 0.5)</div>
+        </div>
+      </div>
+
+      <!-- CS-B: Match Slider explainer -->
+      <div class="card">
+        <div class="card-header"><span class="card-num">CS·2</span><span class="card-title">Match Slider Guide</span><span class="card-dot" style="background:var(--accent)"></span></div>
+        <div class="card-body">
+          <div class="formula-box">
+            <span class="sym">0</span> → scale by width only<br>
+            <span class="sym">0.5</span> → balanced blend<br>
+            <span class="sym">0.8</span> → favor height (portrait)<br>
+            <span class="sym">1</span> → scale by height only
+          </div>
+          <div class="result-row small blue"><span class="result-label">At Match = 0</span><div class="result-val"><span class="result-value" id="cs_m0">—</span><span class="result-unit">×</span></div></div>
+          <div class="result-row small blue"><span class="result-label">At Match = 0.5</span><div class="result-val"><span class="result-value" id="cs_m05">—</span><span class="result-unit">×</span></div></div>
+          <div class="result-row small blue"><span class="result-label">At Match = 0.8</span><div class="result-val"><span class="result-value" id="cs_m08">—</span><span class="result-unit">×</span></div></div>
+          <div class="result-row small blue"><span class="result-label">At Match = 1</span><div class="result-val"><span class="result-value" id="cs_m1">—</span><span class="result-unit">×</span></div></div>
+        </div>
+      </div>
+
+      <!-- CS-C: Device comparison table -->
+      <div class="card wide">
+        <div class="card-header"><span class="card-num">CS·3</span><span class="card-title">Device Comparison — Scale at Current Reference &amp; Match</span><span class="card-dot" style="background:var(--orange)"></span></div>
+        <div class="card-body" style="padding:0">
+          <table class="ppu-table">
+            <thead><tr><th>Device</th><th>Screen</th><th>Width Ratio</th><th>Height Ratio</th><th>Scale (current match)</th></tr></thead>
+            <tbody id="cs_table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CS-D: Tablet fix -->
+      <div class="card">
+        <div class="card-header"><span class="card-num">CS·4</span><span class="card-title">Tablet Oversize Fix</span><span class="card-dot" style="background:var(--orange)"></span></div>
+        <div class="card-body">
+          <div class="formula-box">
+            <span class="sym">Option A</span> Match = 1 (height only)<br>
+            UI won't grow sideways on wide screens.<br><br>
+            <span class="sym">Option B</span> Max Layout Width<br>
+            Clamp container to RefW, add side padding.
+          </div>
+          <div class="result-row small orange">
+            <span class="result-label">Scale if Match = 1</span>
+            <div class="result-val"><span class="result-value" id="cs_fix_h">—</span><span class="result-unit">×</span></div>
+          </div>
+          <div class="result-row small orange">
+            <span class="result-label">Scale if Match = 0.5</span>
+            <div class="result-val"><span class="result-value" id="cs_fix_05">—</span><span class="result-unit">×</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CS-E: Cheat sheet -->
+      <div class="cheatsheet" style="border-top-color:var(--green)">
+        <div class="section-label" style="color:var(--green)">▸ Cheat Sheet — Canvas Scaler</div>
+        <div class="formulas-grid">
+          <div class="formula-pill"><span class="hi">widthRatio</span> = ScreenW / RefW</div>
+          <div class="formula-pill"><span class="hi">heightRatio</span> = ScreenH / RefH</div>
+          <div class="formula-pill"><span class="hi">scale</span> = wR×(1−match) + hR×match</div>
+          <div class="formula-pill"><span class="hi">Match 0.7–0.9</span> → portrait mobile</div>
+          <div class="formula-pill"><span class="hi">Match 1</span> → fix tablet oversize</div>
+          <div class="formula-pill"><span class="hi">No PPU</span> needed — canvas uses px directly</div>
+        </div>
+        <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--text2);line-height:2">
+          <span style="color:var(--green);font-weight:600">Recommended Setup</span><br>
+          CanvasScaler: Scale With Screen Size<br>
+          Reference: 1080 × 2400 &nbsp;·&nbsp; Match: 0.7–0.9<br><br>
+          <span style="color:var(--green);font-weight:600">Hierarchy</span><br>
+          Canvas → SafeArea → TopUI / CenterUI / BottomUI
+        </div>
+      </div>
+
+    </div><!-- /canvas grid -->
+  </div><!-- /canvas section -->
+
+</div>
+
+<script>
+  const el  = id => document.getElementById(id);
+  const num = id => parseFloat(el(id).value) || 0;
+  const fmt = (v, d=2) => (isNaN(v)||!isFinite(v)) ? '—' : v.toFixed(d);
+  const TABLE_PX = [64,100,128,200,256,300,512,1024,1080,2400];
+
+  function update() {
+    const ppu    = num('g_ppu')  || 100;
+    const sw     = num('g_sw')   || 1080;
+    const sh     = num('g_sh')   || 2400;
+    const ortho  = num('g_ortho')|| 12;
+    const aspect = sw / sh;
+    const camH   = 2 * ortho;
+    const camW   = camH * aspect;
+
+    el('c1_out').textContent    = fmt(num('c1_px') / ppu);
+    el('c2_aspect').textContent = fmt(aspect, 3);
+    el('c2_ortho').textContent  = fmt((sw/ppu)/(2*aspect));
+    el('c2_height').textContent = fmt(2*(sw/ppu)/(2*aspect));
+    el('c3_w').textContent      = fmt(camW);
+    el('c3_h').textContent      = fmt(camH);
+    el('c4_out').textContent    = fmt((camW/sw)*num('c4_px'));
+    const sp5 = num('c5_px')/ppu;
+    el('c5_sw').textContent     = fmt(sp5);
+    el('c5_scale').textContent  = fmt(camW/sp5, 3);
+    const spw=num('c6_pw')/ppu, sph=num('c6_ph')/ppu, sx=camW/spw, sy=camH/sph;
+    el('c6_sx').textContent     = fmt(sx,3);
+    el('c6_sy').textContent     = fmt(sy,3);
+    el('c6_cover').textContent  = fmt(Math.max(sx,sy),3);
+    el('c7_out').textContent    = fmt((num('c7_safe')/sh)*camH);
+    el('c8_out').textContent    = fmt(Math.min(1,camW/(num('c8_dw')||10.8)),3);
+    el('c9_ox').textContent     = fmt((num('c9_px')/ppu)-camW/2);
+    el('c9_oy').textContent     = fmt(camH/2-(num('c9_py')/ppu));
+    el('ppu_body').innerHTML    = TABLE_PX.map(px=>`<tr><td>${px} px</td><td>${fmt(px/ppu)}</td></tr>`).join('');
+  }
+
+  // Canvas Scaler sync
+  const el2 = id => document.getElementById(id);
+  el2('cs_match').addEventListener('input', () => { el2('cs_match_slider').value = el2('cs_match').value; updateCS(); });
+  el2('cs_match_slider').addEventListener('input', () => { el2('cs_match').value = el2('cs_match_slider').value; updateCS(); });
+  ['cs_rw','cs_rh','cs_dw','cs_dh'].forEach(id => el2(id) && el2(id).addEventListener('input', updateCS));
+
+  document.querySelectorAll('input').forEach(i => {
+    if (!['cs_match','cs_match_slider','cs_rw','cs_rh','cs_dw','cs_dh'].includes(i.id))
+      i.addEventListener('input', update);
+  });
+
+  const DEVICES = [
+    { name: 'Same as reference', w: null, h: null },
+    { name: 'Full HD Phone',     w: 1080, h: 1920 },
+    { name: 'QHD Phone',         w: 1440, h: 3200 },
+    { name: 'iPhone 14 Pro',     w: 1179, h: 2556 },
+    { name: 'iPad (9th gen)',    w: 1620, h: 2160 },
+    { name: 'iPad Pro 12.9"',   w: 2048, h: 2732 },
+  ];
+
+  function lerp(a, b, t) { return a * (1 - t) + b * t; }
+
+  function updateCS() {
+    const rw    = parseFloat(el2('cs_rw').value)    || 1080;
+    const rh    = parseFloat(el2('cs_rh').value)    || 2400;
+    const match = Math.min(1, Math.max(0, parseFloat(el2('cs_match').value) || 0));
+    const dw    = parseFloat(el2('cs_dw').value)    || 1440;
+    const dh    = parseFloat(el2('cs_dh').value)    || 3200;
+
+    const wr = dw / rw;
+    const hr = dh / rh;
+    const sc = lerp(wr, hr, match);
+
+    el2('cs_wr').textContent    = wr.toFixed(3);
+    el2('cs_hr').textContent    = hr.toFixed(3);
+    el2('cs_scale').textContent = sc.toFixed(3);
+
+    const notemap = {'0':'Width-only scaling','1':'Height-only scaling','0.5':'Balanced blend (match = 0.5)'};
+    el2('cs_note').textContent = notemap[match.toFixed(1)] ?? `Lerp blend (match = ${match.toFixed(2)})`;
+
+    el2('cs_m0').textContent   = lerp(wr,hr,0).toFixed(3);
+    el2('cs_m05').textContent  = lerp(wr,hr,0.5).toFixed(3);
+    el2('cs_m08').textContent  = lerp(wr,hr,0.8).toFixed(3);
+    el2('cs_m1').textContent   = lerp(wr,hr,1).toFixed(3);
+    el2('cs_fix_h').textContent   = lerp(wr,hr,1).toFixed(3);
+    el2('cs_fix_05').textContent  = lerp(wr,hr,0.5).toFixed(3);
+
+    const tbody = el2('cs_table');
+    tbody.innerHTML = DEVICES.map(d => {
+      const sw = d.w ?? rw, sh = d.h ?? rh;
+      const wri = sw/rw, hri = sh/rh, s = lerp(wri,hri,match);
+      const style = Math.abs(s-1)<0.001 ? ' style="color:var(--green);font-weight:600"' : s>1.4 ? ' style="color:var(--orange)"' : '';
+      return `<tr><td>${d.name}</td><td style="color:var(--muted)">${sw}×${sh}</td><td>${wri.toFixed(3)}×</td><td>${hri.toFixed(3)}×</td><td${style}>${s.toFixed(3)}×</td></tr>`;
+    }).join('');
+  }
+
+  update();
+  updateCS();
+</script>
+</body>
+</html>
