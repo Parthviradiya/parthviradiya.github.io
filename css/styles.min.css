@@ -303,6 +303,12 @@ li {
     width: 100%;
 	transition: all 300ms ease-in-out 0s;
 }
+/* uniform thumbnail tiles so the grid has no gaps */
+.portfolioWrapper .imageWrapper > a > img {
+    display: block;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
 .portfolioWrapper .imageHover:hover {
     transform: scale(1.1);
     z-index: 999;
